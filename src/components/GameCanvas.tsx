@@ -277,9 +277,9 @@ const SimulationBridge = ({ controls }: { controls: GameControlsHandle }) => {
   const tick = useGameStore((state) => state.tick)
   const screenShake = useGameStore((state) => state.screenShake)
 
-  useFrame((frameState) => {
+  useFrame((frameState, delta) => {
     const snapshot = controls.consume()
-    tick(Math.min(frameState.clock.getDelta(), 0.033), snapshot)
+    tick(Math.min(delta, 0.033), snapshot)
     const wobble = screenShake > 0 ? screenShake * 0.15 : 0
     frameState.camera.position.x = wobble ? Math.sin(frameState.clock.elapsedTime * 38) * wobble : 0
     frameState.camera.position.y = 13.8 + (wobble ? Math.cos(frameState.clock.elapsedTime * 44) * wobble : 0)

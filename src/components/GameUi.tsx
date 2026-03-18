@@ -95,6 +95,7 @@ const HudPanel = () => {
   const phase = useGameStore((state) => state.phase)
   const inventoryOpen = useGameStore((state) => state.inventoryOpen)
   const toggleInventory = useGameStore((state) => state.toggleInventory)
+  const enemyCount = useGameStore((state) => state.enemies.length)
   const healthPercent = useGameStore((state) => getPlayerHealthPercent(state))
   const maxHp = useGameStore((state) => {
     const derived = state.equipment
@@ -115,6 +116,7 @@ const HudPanel = () => {
           {Math.round(player.hp)} / {Math.round(maxHp)} HP
         </span>
         <span>Gold: {runStats.gold}</span>
+        {phase === 'run' && <span>Enemies: {enemyCount}</span>}
       </div>
       <div className="skill-row">
         {[
@@ -240,6 +242,7 @@ const RunBanner = () => {
   const advanceRoom = useGameStore((state) => state.advanceRoom)
   const rooms = useGameStore((state) => state.rooms)
   const roomIndex = useGameStore((state) => state.roomIndex)
+  const enemyCount = useGameStore((state) => state.enemies.length)
 
   if (phase === 'hub') {
     return null
@@ -251,6 +254,11 @@ const RunBanner = () => {
         <section className="banner">
           <h2 className="room-title">{room?.title}</h2>
           <p>{message}</p>
+          <div className="legend" style={{ marginTop: 10 }}>
+            {room?.cleared
+              ? 'Room clear. Collect upgrades, then descend.'
+              : `Objective: defeat ${enemyCount} remaining foe${enemyCount === 1 ? '' : 's'}.`}
+          </div>
           <div className="room-strip">
             {rooms.map((entry, index) => (
               <div

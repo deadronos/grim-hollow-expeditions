@@ -127,14 +127,14 @@ const persistMeta = (meta: MetaState) => {
 }
 
 const createPlayer = (): PlayerState => ({
-  pos: vec(0, -1.8),
+  pos: vec(0, -5.4),
   facing: Math.PI / 2,
   hp: 100,
   attackCooldown: 0,
   slamCooldown: 0,
   dashCooldown: 0,
   dashTimer: 0,
-  invuln: 0,
+  invuln: 0.8,
   flash: 0,
 })
 
@@ -148,7 +148,7 @@ const defaultRunStats = (): RunStats => ({
 const createEnemy = (type: EnemyType, index: number): EnemyState => {
   const angle = (Math.PI * 2 * index) / 5
   const ring = type === 'bone-warden' ? 3.8 : 4.8
-  const spawn = add(vec(0, 1.5), scale(fromAngle(angle), ring))
+  const spawn = add(vec(0, 3.8), scale(fromAngle(angle), ring))
 
   switch (type) {
     case 'skeleton-soldier':
@@ -224,7 +224,7 @@ const createEnemy = (type: EnemyType, index: number): EnemyState => {
         id: id(),
         type,
         name: getEnemyName(type),
-        pos: vec(0, 2.8),
+        pos: vec(0, 5.2),
         hp: 240,
         maxHp: 240,
         speed: 1.5,
@@ -537,17 +537,25 @@ const performBasicAttack = (state: GameState, input: GameInput) => {
     duration: 0.22,
   })
 
-  for (const enemy of state.enemies) {
-    const toEnemy = subtract(enemy.pos, state.player.pos)
-    if (length(toEnemy) > 1.9 + enemy.radius) {
-      continue
-    }
+  const closeEnemies = state.enemies
+    .map((enemy) => ({
+      enemy,
+      toEnemy: subtract(enemy.pos, state.player.pos),
+      dist: distance(enemy.pos, state.player.pos),
+    }))
+    .filter(({ enemy, dist }) => dist <= 2.05 + enemy.radius)
 
+  const aimedEnemies = closeEnemies.filter(({ toEnemy }) => {
     const facingDot = dot(normalize(toEnemy), normalize(subtract(input.aim, state.player.pos)))
-    if (facingDot < MELEE_ARC) {
-      continue
-    }
+    return facingDot >= MELEE_ARC
+  })
 
+  const targets = (aimedEnemies.length > 0 ? aimedEnemies : closeEnemies)
+    .sort((left, right) => left.dist - right.dist)
+    .slice(0, aimedEnemies.length > 0 ? 3 : 1)
+
+  for (const { enemy } of targets) {
+    state.player.facing = angleFrom(state.player.pos, enemy.pos)
     const crit = Math.random() < stats.critChance
     const amount = stats.damage * (crit ? 1.8 : 1)
     applyDamageToEnemy(state, enemy, amount, crit)
@@ -590,7 +598,9 @@ const performDash = (state: GameState, input: GameInput) => {
     return
   }
 
-  const direction = normalize(subtract(input.aim, state.player.pos))
+  const moveDirection = normalize(input.move)
+  const aimDirection = normalize(subtract(input.aim, state.player.pos))
+  const direction = length(moveDirection) > 0 ? moveDirection : aimDirection
   if (length(direction) < 0.1) {
     return
   }
@@ -848,11 +858,12 @@ export const useGameStore = create<GameState>((set) => ({
       nextState.phase = 'run'
       nextState.meta = state.meta
       nextState.rooms = rooms
-      nextState.roomIndex = 0
+      nextState.roomIndex = 1
       nextState.player = createPlayer()
       nextState.equipment = getStarterEquipment()
       nextState.player.hp = derived.maxHealth + (nextState.equipment.armor.stats.maxHealth ?? 0)
-      nextState.message = 'The stair yawns open. Clear rooms, gather loot, survive the boss.'
+      nextState.enemies = spawnRoomEnemies(rooms[1])
+      nextState.message = `${rooms[1].title}. ${rooms[1].subtitle} Defeat the chamber to keep descending.`
       return nextState
     })
   },
@@ -924,9 +935,10 @@ export const useGameStore = create<GameState>((set) => ({
             state.roomIndex = nextIndex
             state.player = {
               ...state.player,
-              pos: vec(0, -2.8),
+              pos: vec(0, -5.4),
               attackCooldown: 0,
               dashTimer: 0,
+              invuln: 0.8,
             }
             state.enemies = nextEnemies
             state.projectiles = []
@@ -962,9 +974,10 @@ export const useGameStore = create<GameState>((set) => ({
         roomIndex: nextIndex,
         player: {
           ...state.player,
-          pos: vec(0, -2.8),
+          pos: vec(0, -5.4),
           attackCooldown: 0,
           dashTimer: 0,
+          invuln: 0.8,
         },
         enemies: nextEnemies,
         projectiles: [],
