@@ -227,7 +227,7 @@ const NearbyLootCard = () => {
           Take to Pack
         </button>
       </div>
-      <div className="legend">Walk close and press `E` or `F` for the same pickup.</div>
+      <div className="legend">Walk close and press `F` for the same pickup.</div>
     </article>
   )
 }
@@ -274,7 +274,7 @@ const RunBanner = () => {
             )}
           </div>
           <div className="legend" style={{ marginTop: 10 }}>
-            Press `E` or `F` to collect nearby loot or descend once the room is clear.
+            Press `F` to collect nearby loot or descend once the room is clear.
           </div>
         </section>
       </div>
